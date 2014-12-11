@@ -24,17 +24,19 @@ TEST_TGT = ${TEST_SRC:$(TEST_DIR)/%.sjs=$(TEST_BLD)/%.js}
 dist:
 	mkdir -p $@
 
-dist/$(PACKAGE).umd.js: $(LIB_DIR)/index.js dist
+dist/$$PACKAGE.umd.js: $(LIB_DIR)/index.js
 	$(browserify) $< --standalone $(EXPORTS) > $@
 
-dist/$(PACKAGE).umd.min.js: dist/$(PACKAGE).umd.js
+dist/$$PACKAGE.umd.min.js: dist/$(PACKAGE).umd.js
 	$(uglify) --mangle - < $< > $@
 
 $(LIB_DIR)/%.js: $(SRC_DIR)/%.sjs
 	mkdir -p $(dir $@)
 	$(sjs) --readable-names \
-	       --sourcemap      \
-	       --output $@      \
+	       --sourcemap \
+	       --module sweet-fantasies/src/do \
+	       --module lambda-chop/macros \
+	       --output $@ \
 	       $<
 
 $(TEST_BLD)/%.js: $(TEST_DIR)/%.sjs

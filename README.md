@@ -16,7 +16,7 @@ A wrapper over Benchmark.js to make writing benchmarks easier
 ```js
 var Benchmark = require('test.benchmark');
 
-var suite = Benchmark.Suite('Testing characters', {
+var suite = Benchmark.suite('Testing characters', {
   'RegExp#test': function() {
     /o/.test('Hello World!')
   },
@@ -27,13 +27,16 @@ var suite = Benchmark.Suite('Testing characters', {
 
 Benchmark.runWithDefaults([suite]);
 
-// Benchmarks for: Testing characters
-//
-// o RegExp#test x 4,161,532 +-0.99% (59 cycles)
-// o String#indexOf x 6,139,623 +-1.00% (131 cycles)
-//
+// Benchmarks for: Testing characters...
+// 
+// o RegExp#test x 2,845,283 ops/sec ±2.55% (84 runs sampled)
+// o String#indexOf x 4,958,748 ops/sec ±2.51% (90 runs sampled)
+// 
 // Fastest: String#indexOf
 // Slowest: RegExp#test
+// 
+// ---
+// All benchmarks finished.
 ```
 
 
@@ -124,5 +127,5 @@ Released under the [MIT licence](https://github.com/folktale/test.benchmark/blob
 [es5-shim]: https://github.com/kriskowal/es5-shim
 [docs]: http://folktale.github.io/test.benchmark
 <!-- [release: https://github.com/folktale/test.benchmark/releases/download/v$VERSION/test.benchmark-$VERSION.tar.gz] -->
-[release]: https://github.com/folktale/test.benchmark/releases/download/v0.0.0/test.benchmark-0.0.0.tar.gz
+[release]: https://github.com/folktale/test.benchmark/releases/download/v0.1.0/test.benchmark-0.1.0.tar.gz
 <!-- [/release] -->

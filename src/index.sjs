@@ -24,3 +24,102 @@
  *
  * @module lib/index
  */
+
+var Benchmark = require('benchmark');
+var Future = require('data.future');
+
+function pairs(x) {
+  return Object.keys(x).map(λ(k) -> ({ key: k, value: x[k] }))
+}
+
+function suite(name, tests) {
+  var Suite = new Benchmark.Suite(name);
+  pairs(tests).forEach(function(pair) {
+    Suite.add(pair.key, pair.value);
+  });
+  return Suite;
+}
+
+function fastest(suite) {
+  return suite.filter('fastest').pluck('name')
+}
+
+function slowest(suite) {
+  return suite.filter('slowest').pluck('name')
+}
+
+function runSuite(suite) {
+  return new Future(function(reject, resolve) {
+    var results  = [];
+    var resolved = false;
+
+    suite.on('cycle', function(event) {
+      var test = event.target;
+      if (test.error)  transitionTo(reject, test);
+      else             results.push(test)
+    });
+
+    suite.on('complete', function() {
+      transitionTo(resolve, {
+        fastest: fastest(this).join(', '),
+        slowest: slowest(this).join(', '),
+        results: results
+      })
+    });
+
+    suite.run({ async: true })
+
+
+    function transitionTo(state, value) {
+      if (!resolved) {
+        resolved = true;
+        state(value)
+      }
+    }
+  })
+}
+
+function log(data) {
+  return new Future(function(_, resolve) {
+    console.log(data);
+    resolve();
+  })
+}
+
+function renderResults(x) {
+  return x.results.map(λ['o ' + #]).join('\n')
+       + '\n\n'
+       + 'Fastest: ' + x.fastest + '\n'
+       + 'Slowest: ' + x.slowest
+}
+
+function runFuture(x) {
+  x.fork(function(error) {
+    throw error.error
+  }, function() {
+    /* ignore */
+  })
+}
+
+function runWithDefaults(suites) {
+  if (suites.length > 0) {
+    var suite = suites[0];
+    var rest = suites.slice(1);
+    return runFuture($do {
+      log('\nBenchmarks for: ' + suite.name + '...\n');
+      results <- runSuite(suite);
+      log(renderResults(results));
+      log('\n---');
+      runWithDefaults(rest)
+    })
+  } else {
+    console.log('All benchmarks finished.');
+    return Future.of();
+  }
+}
+
+
+module.exports = {
+  suite: suite,
+  runWithDefaults: runWithDefaults
+}
