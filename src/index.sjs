@@ -82,8 +82,8 @@ function asyncSuite(name, tests) {
   pairs(tests).forEach(function(pair) {
     Suite.add(pair.key, {
       defer: true,
-      initCount: 100,
-      minSamples: 100,
+      initCount: 50,
+      minSamples: 50,
       onCycle: function() {
         Suite.emit('tick')
       },
@@ -109,8 +109,8 @@ function syncSuite(name, tests) {
   var Suite = new Benchmark.Suite(name);
   pairs(tests).forEach(function(pair) {
     Suite.add(pair.key, {
-      initCount: 100,
-      minSamples: 100,
+      initCount: 50,
+      minSamples: 50,
       onCycle: function() {
         Suite.emit('tick')
       },
