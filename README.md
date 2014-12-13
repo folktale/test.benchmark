@@ -15,6 +15,7 @@ A wrapper over Benchmark.js to make writing benchmarks easier
 
 ```js
 var Benchmark = require('test.benchmark');
+var Future = require('data.future');
 
 // Synchronous
 var suite = Benchmark.syncSuite('Testing characters', {
@@ -28,20 +29,20 @@ var suite = Benchmark.syncSuite('Testing characters', {
 
 // Asynchronous
 var asyncSuite = Benchmark.asyncSuite('Scheduling', {
-  'nextTick': function(done) {
-    process.nextTick(done)
-  },
-  'setImmediate': function(done) {
-    setImmediate(done)
-  }
+  'nextTick': new Future(function(reject, resolve) {
+    process.nextTick(resolve)
+  }),
+  'setImmediate': new Future(function(reject, resolve) {
+    setImmediate(resolve)
+  })
 });
 
 Benchmark.runWithDefaults([asyncSuite, suite]);
 
 // Benchmarks for: Scheduling...
-// 
-// o nextTick x 767 ops/sec ±0.79% (83 runs sampled)
-// o setImmediate x 755 ops/sec ±0.99% (87 runs sampled)
+//
+// o nextTick x 770 ops/sec ±0.70% (66 runs sampled)
+// o setImmediate x 758 ops/sec ±1.18% (86 runs sampled)
 // 
 // Fastest: nextTick
 // Slowest: setImmediate

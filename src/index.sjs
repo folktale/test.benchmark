@@ -36,7 +36,7 @@ function asyncSuite(name, tests) {
   var Suite = new Benchmark.Suite(name);
   pairs(tests).forEach(function(pair) {
     Suite.add(pair.key, { defer: true, fn: function(deferred) {
-      pair.value().fork(
+      pair.value.fork(
         function(error) {
           console.error('Error running benchmark:', pair.key);
           if (error) console.error(error.stack);
