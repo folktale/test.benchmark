@@ -149,5 +149,5 @@ Released under the [MIT licence](https://github.com/folktale/test.benchmark/blob
 [es5-shim]: https://github.com/kriskowal/es5-shim
 [docs]: http://folktale.github.io/test.benchmark
 <!-- [release: https://github.com/folktale/test.benchmark/releases/download/v$VERSION/test.benchmark-$VERSION.tar.gz] -->
-[release]: https://github.com/folktale/test.benchmark/releases/download/v0.3.0/test.benchmark-0.3.0.tar.gz
+[release]: https://github.com/folktale/test.benchmark/releases/download/v0.3.1/test.benchmark-0.3.1.tar.gz
 <!-- [/release] -->
