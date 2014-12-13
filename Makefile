@@ -36,6 +36,7 @@ $(LIB_DIR)/%.js: $(SRC_DIR)/%.sjs
 	       --sourcemap \
 	       --module sweet-fantasies/src/do \
 	       --module lambda-chop/macros \
+	       --module macros.operators/macros \
 	       --output $@ \
 	       $<
 

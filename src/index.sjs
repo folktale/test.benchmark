@@ -27,6 +27,51 @@
 
 var Benchmark = require('benchmark');
 var Future = require('data.future');
+var extend = require('xtend');
+
+function repeat(n, c) {
+  return Array(n + 1).join(c)
+}
+
+function Progress(options) {
+  this._size = options.size;
+  this._width = options.width || options.size;
+  this._format = options.format || '[:bar] :current/:total';
+  this._prefix = options.prefix || '';
+  this._completed = 0;
+  this._cycle = 0;
+  this._cycle_chars = '|/-\\';
+  this._stream = options.stream || process.stderr;
+}
+Progress::tick = function() {
+  this._cycle = (this._cycle + 1) % this._cycle_chars.length;
+}
+Progress::setCompletion = function(amount) {
+  this._completed = Math.min(this._size, amount);
+}
+Progress::setPrefix = function(newPrefix) {
+  this._prefix = newPrefix;
+}
+Progress::render = function() {
+  var ratio = this._completed / this._size;
+  var size = Math.floor(ratio * this._width);
+  var fill = this._width - size - 1;
+  var cycle = this._completed < this._size? this._cycle_chars[this._cycle] : '';
+
+  var image = this._format.replace(/:current/g, this._completed)
+                          .replace(/:total/g, this._size)
+                          .replace(/:bar/g,  repeat(size, '=') + cycle + repeat(fill, ' '));
+
+  this._stream.write('\r');
+  this.clear();
+  this._stream.write(this._prefix + image);
+}
+Progress::clear = function() {
+  this._stream.clearLine();
+  this._stream.cursorTo(0);
+}
+
+
 
 function pairs(x) {
   return Object.keys(x).map(λ(k) -> ({ key: k, value: x[k] }))
@@ -35,19 +80,27 @@ function pairs(x) {
 function asyncSuite(name, tests) {
   var Suite = new Benchmark.Suite(name);
   pairs(tests).forEach(function(pair) {
-    Suite.add(pair.key, { defer: true, fn: function(deferred) {
-      pair.value.fork(
-        function(error) {
-          console.error('Error running benchmark:', pair.key);
-          if (error) console.error(error.stack);
-          deferred.benchmark.abort()
-          Suite.abort();
-        },
-        function() {
-          deferred.resolve()
-        }
-      )
-    }});
+    Suite.add(pair.key, {
+      defer: true,
+      initCount: 100,
+      minSamples: 100,
+      onCycle: function() {
+        Suite.emit('tick')
+      },
+      fn: function(deferred) {
+        pair.value.fork(
+          function(error) {
+            console.error('Error running benchmark:', pair.key);
+            if (error) console.error(error.stack);
+            deferred.benchmark.abort()
+            Suite.abort();
+          },
+          function() {
+            deferred.resolve()
+          }
+        )
+      }
+    });
   });
   return Suite;
 }
@@ -55,7 +108,14 @@ function asyncSuite(name, tests) {
 function syncSuite(name, tests) {
   var Suite = new Benchmark.Suite(name);
   pairs(tests).forEach(function(pair) {
-    Suite.add(pair.key, pair.value);
+    Suite.add(pair.key, {
+      initCount: 100,
+      minSamples: 100,
+      onCycle: function() {
+        Suite.emit('tick')
+      },
+      fn: pair.value
+    });
   });
   return Suite;
 }
@@ -68,22 +128,39 @@ function slowest(suite) {
   return suite.filter('slowest').pluck('name')
 }
 
-function runSuite(suite) {
+function runSuite(suite, options) {
   return new Future(function(reject, resolve) {
-    var results  = [];
     var resolved = false;
+    var results = [];
+    var status = new Progress({
+      size: suite.length,
+      prefix: ''
+    });
 
     suite.on('cycle', function(event) {
       var test = event.target;
+            
       if (test.error)  transitionTo(reject, test);
-      else             results.push(test)
+      else             results.push(test);
+    });
+
+    suite.on('tick', function(event) {
+      var current = results.length;
+      var test = suite[current]
+
+      status.setPrefix(test.name + ': ');
+      status.setCompletion(current);
+      status.tick();
+      status.render();
     });
 
     suite.on('abort', function(event) {
+      status.clear();
       transitionTo(reject, new Error('Benchmark aborted.'));
     });
 
     suite.on('complete', function() {
+      status.clear();
       transitionTo(resolve, {
         fastest: fastest(this).join(', '),
         slowest: slowest(this).join(', '),
@@ -91,7 +168,7 @@ function runSuite(suite) {
       })
     });
 
-    suite.run({ async: true, defer: true })
+    suite.run(extend({ async: true, defer: true }, options || {}))
 
 
     function transitionTo(state, value) {
