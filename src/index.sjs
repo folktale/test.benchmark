@@ -64,7 +64,7 @@ Progress::render = function() {
 
   this._stream.write('\r');
   this.clear();
-  this._stream.write(this._prefix + image);
+  this._stream.write(image);
 }
 Progress::clear = function() {
   this._stream.clearLine();
