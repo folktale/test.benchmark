@@ -16,21 +16,42 @@ A wrapper over Benchmark.js to make writing benchmarks easier
 ```js
 var Benchmark = require('test.benchmark');
 
-var suite = Benchmark.suite('Testing characters', {
+// Synchronous
+var suite = Benchmark.syncSuite('Testing characters', {
   'RegExp#test': function() {
     /o/.test('Hello World!')
   },
   'String#indexOf': function() {
     'Hello World'.indexOf('o') !== -1
   }
-})
+});
 
-Benchmark.runWithDefaults([suite]);
+// Asynchronous
+var asyncSuite = Benchmark.asyncSuite('Scheduling', {
+  'nextTick': function(done) {
+    process.nextTick(done)
+  },
+  'setImmediate': function(done) {
+    setImmediate(done)
+  }
+});
 
+Benchmark.runWithDefaults([asyncSuite, suite]);
+
+// Benchmarks for: Scheduling...
+// 
+// o nextTick x 767 ops/sec ±0.79% (83 runs sampled)
+// o setImmediate x 755 ops/sec ±0.99% (87 runs sampled)
+// 
+// Fastest: nextTick
+// Slowest: setImmediate
+// 
+// ---
+// 
 // Benchmarks for: Testing characters...
 // 
-// o RegExp#test x 2,845,283 ops/sec ±2.55% (84 runs sampled)
-// o String#indexOf x 4,958,748 ops/sec ±2.51% (90 runs sampled)
+// o RegExp#test x 3,162,850 ops/sec ±3.20% (91 runs sampled)
+// o String#indexOf x 5,175,777 ops/sec ±1.69% (86 runs sampled)
 // 
 // Fastest: String#indexOf
 // Slowest: RegExp#test

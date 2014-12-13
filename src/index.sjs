@@ -32,7 +32,27 @@ function pairs(x) {
   return Object.keys(x).map(λ(k) -> ({ key: k, value: x[k] }))
 }
 
-function suite(name, tests) {
+function asyncSuite(name, tests) {
+  var Suite = new Benchmark.Suite(name);
+  pairs(tests).forEach(function(pair) {
+    Suite.add(pair.key, { defer: true, fn: function(deferred) {
+      pair.value().fork(
+        function(error) {
+          console.error('Error running benchmark:', pair.key);
+          if (error) console.error(error.stack);
+          deferred.benchmark.abort()
+          Suite.abort();
+        },
+        function() {
+          deferred.resolve()
+        }
+      )
+    }});
+  });
+  return Suite;
+}
+
+function syncSuite(name, tests) {
   var Suite = new Benchmark.Suite(name);
   pairs(tests).forEach(function(pair) {
     Suite.add(pair.key, pair.value);
@@ -59,6 +79,10 @@ function runSuite(suite) {
       else             results.push(test)
     });
 
+    suite.on('abort', function(event) {
+      transitionTo(reject, new Error('Benchmark aborted.'));
+    });
+
     suite.on('complete', function() {
       transitionTo(resolve, {
         fastest: fastest(this).join(', '),
@@ -67,7 +91,7 @@ function runSuite(suite) {
       })
     });
 
-    suite.run({ async: true })
+    suite.run({ async: true, defer: true })
 
 
     function transitionTo(state, value) {
@@ -101,16 +125,22 @@ function runFuture(x) {
   })
 }
 
-function runWithDefaults(suites) {
+function run(suites) {
   if (suites.length > 0) {
     var suite = suites[0];
     var rest = suites.slice(1);
-    return runFuture($do {
+    return $do {
       log('\nBenchmarks for: ' + suite.name + '...\n');
       results <- runSuite(suite);
       log(renderResults(results));
       log('\n---');
-      runWithDefaults(rest)
+      run(rest)
+    }.orElse(function(error) {
+      return $do {
+        log(error);
+        log('\n---');
+        run(rest)
+      }
     })
   } else {
     console.log('All benchmarks finished.');
@@ -118,8 +148,11 @@ function runWithDefaults(suites) {
   }
 }
 
-
+function runWithDefaults(suites) {
+  return runFuture(run(suites))
+}
 module.exports = {
-  suite: suite,
+  syncSuite: syncSuite,
+  asyncSuite: asyncSuite,
   runWithDefaults: runWithDefaults
 }
