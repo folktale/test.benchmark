@@ -144,7 +144,7 @@ function runSuite(suite, options) {
       else             results.push(test);
     });
 
-    suite.on('tick', function(event) {
+    suite.on('tick', function() {
       var current = results.length;
       var test = suite[current]
 
@@ -154,9 +154,13 @@ function runSuite(suite, options) {
       status.render();
     });
 
-    suite.on('abort', function(event) {
+    suite.on('abort', function() {
       status.clear();
       transitionTo(reject, new Error('Benchmark aborted.'));
+    });
+
+    suite.on('start', function() {
+      suite.emit('tick');
     });
 
     suite.on('complete', function() {
